@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import Wallet from "../components/Wallet/Wallet";
 import Navigation from "../components/Navigation/Navigation";
@@ -31,11 +32,19 @@ const SwiperContainer = styled.div`
 `;
 
 import { dummyGroup } from "../components/VoteCard/dummy";
+import { useKinto } from "../hooks/useKinto";
+import { useCompetition, useLike } from "../hooks/useCompetition";
+import { UserInfo } from "../interface/interface";
 
 const VotePage = () => {
-  const address = "1"; // TODO: 내 지갑 주소
+  const queryClient = useQueryClient();
 
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const address = "0xBd447658d2eaDff72a51386c12A273671a33e064"; // TODO: 내 지갑 주소
+  const { accountInfo } = useKinto();
+  const { data: competitionArr, isLoading } = useCompetition();
+  const { mutate: like } = useLike();
+
+  const [selectedUser, setSelectedUser] = useState<number | null>(null);
 
   const swiperRef = useRef<HTMLDivElement>(null);
 
@@ -64,35 +73,63 @@ const VotePage = () => {
     return group.users.some((user) => user.wallet === address);
   };
 
-  const handleVote = (groupId: number) => {
+  const handleVote = (competitionId: number, fromUserId: number) => {
     if (!selectedUser) return;
     // TODO: 투표 로직 구현
-    console.log(`Voted for ${selectedUser} in group ${groupId}`);
-    setSelectedUser(null);
+    // console.log(`Voted for ${selectedUser} in group ${competitionId}`);
+    try {
+      console.log(competitionId, selectedUser, fromUserId);
+      const res = like({ competitionId, toUserId: selectedUser, fromUserId });
+      console.log(res);
+
+      queryClient.invalidateQueries({
+        queryKey: ["competitionLikes", competitionId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["userLikeInCompetition", competitionId, fromUserId],
+      });
+      // setSelectedUser(null);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  const dummyGroupWithout = dummyGroup.filter(
-    (group) => !group.users.some((user) => user.wallet === address)
-  );
+  // const dummyGroupWithout = dummyGroup.filter(
+  //   (group) => !group.users.some((user) => user.wallet === address)
+  // );
+
+  const filteredGroups = Array.isArray(competitionArr)
+    ? competitionArr.filter(
+        (group) =>
+          !group.users.some(
+            (user: UserInfo) => user.account === accountInfo?.walletAddress
+          )
+      )
+    : [];
+  // console.log(filteredGroups);
+
   return (
     <div className="relative flex flex-col gap-8">
       <Wallet />
       <SwiperContainer>
         <div ref={swiperRef} className="swiper w-full">
           <div className="swiper-wrapper items-center">
-            {dummyGroupWithout.map((group, idx) => (
+            {filteredGroups.map((group, idx) => (
               <div
                 key={idx}
                 className="swiper-slide transition-opacity duration-300"
               >
-                <VoteCard
-                  group={group}
-                  isGroupMember={isGroupMember(group)}
-                  selectedUser={selectedUser}
-                  onSelectUser={setSelectedUser}
-                  onVote={() => handleVote(group.id)}
-                  myAddress={address}
-                />
+                {!isLoading && (
+                  <VoteCard
+                    group={group}
+                    isGroupMember={isGroupMember(group)}
+                    selectedUser={selectedUser}
+                    onSelectUser={setSelectedUser}
+                    onVote={handleVote}
+                    myAddress={address}
+                    isLoading={isLoading}
+                  />
+                )}
               </div>
             ))}
           </div>

@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
 import Wallet from "../components/Wallet/Wallet";
 import Navigation from "../components/Navigation/Navigation";
 
@@ -12,8 +14,17 @@ import photo4 from "@/assets/photo4.jpeg";
 import { Label } from "../components/ui/label";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
+import { useKinto } from "../hooks/useKinto";
+import { useUserInfo } from "../hooks/useUserInfo";
 
 const MyPage = () => {
+  const { accountInfo } = useKinto();
+  const { data: userInfo, isLoading } = useUserInfo(
+    accountInfo?.walletAddress || "0xBd447658d2eaDff72a51386c12A273671a33e064"
+  );
+
+  console.log(userInfo);
+
   const saveProfile = async () => {
     // TODO: post profile
   };
@@ -26,16 +37,14 @@ const MyPage = () => {
           <div
             className="relative rounded-full bg-gray-300 w-[130px] h-[130px]"
             style={{
-              backgroundImage: `url(${photo1})`,
+              backgroundImage: isLoading
+                ? ""
+                : `url(http://localhost:3000/image/${userInfo?.profileImage})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
           >
             <img src={profile1} className="absolute bottom-0 right-0" />
-            {/* <img
-          src={profile2}
-          className="absolute w-[20px] h-[20px] top-[50%] left-[50%] transform -translate-x-1/2 -translate-y-1/2"
-        /> */}
           </div>
 
           <div className="flex flex-col gap-4 w-full">
@@ -44,7 +53,7 @@ const MyPage = () => {
               <div
                 className="relative rounded-xl bg-gray-300 w-[110px] h-[110px] overflow-hidden"
                 style={{
-                  backgroundImage: `url(${photo2})`,
+                  backgroundImage: isLoading ? "" : `url(${photo2})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
@@ -52,7 +61,7 @@ const MyPage = () => {
               <div
                 className="relative rounded-xl bg-gray-300 w-[110px] h-[110px] overflow-hidden"
                 style={{
-                  backgroundImage: `url(${photo3})`,
+                  backgroundImage: isLoading ? "" : `url(${photo3})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
@@ -60,7 +69,7 @@ const MyPage = () => {
               <div
                 className="relative rounded-xl bg-gray-300 w-[110px] h-[110px] overflow-hidden"
                 style={{
-                  backgroundImage: `url(${photo4})`,
+                  backgroundImage: isLoading ? "" : `url(${photo4})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
@@ -72,14 +81,14 @@ const MyPage = () => {
             <div className="flex gap-1 flex-col">
               <Label>Name</Label>
               <Input
-                defaultValue="Yurina"
+                defaultValue={isLoading ? "" : userInfo?.name}
                 className="border-0 border-[#888888] border-b-[1px] p-0"
               />
             </div>
             <div className="flex gap-1 flex-col">
               <Label>Age</Label>
               <Input
-                defaultValue="21"
+                defaultValue={isLoading ? "" : userInfo?.age}
                 className="border-0 border-[#888888] border-b-[1px] p-0"
               />
             </div>
@@ -89,7 +98,7 @@ const MyPage = () => {
             <div className="flex gap-1 flex-col">
               <Label>About</Label>
               <Input
-                defaultValue="Hi, I'm Yurina. Nice to meet you."
+                defaultValue={isLoading ? "" : userInfo?.about}
                 className="border-0 border-[#888888] border-b-[1px] p-0"
               />
             </div>
@@ -99,14 +108,14 @@ const MyPage = () => {
             <div className="flex gap-1 flex-col">
               <Label>Country</Label>
               <Input
-                defaultValue="Japan"
+                defaultValue={isLoading ? "" : userInfo?.country}
                 className="border-0 border-[#888888] border-b-[1px] p-0"
               />
             </div>
             <div className="flex gap-1 flex-col">
               <Label>Mbti</Label>
               <Input
-                defaultValue="ENFP"
+                defaultValue={isLoading ? "" : userInfo?.mbti}
                 className="border-0 border-[#888888] border-b-[1px] p-0"
               />
             </div>
@@ -116,7 +125,7 @@ const MyPage = () => {
             <div className="flex gap-1 flex-col">
               <Label>Hobby</Label>
               <Input
-                defaultValue="Shopping / Watching movies"
+                defaultValue={isLoading ? "" : userInfo?.hobby}
                 className="border-0 border-[#888888] border-b-[1px] p-0"
               />
             </div>

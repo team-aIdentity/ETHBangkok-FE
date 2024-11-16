@@ -14,10 +14,6 @@ export const dummyGroup = [
     id: 1,
     users: [
       {
-        image: user1,
-        wallet: "1",
-      },
-      {
         image: user2,
         wallet: "2",
       },
@@ -28,6 +24,10 @@ export const dummyGroup = [
       {
         image: user4,
         wallet: "4",
+      },
+      {
+        image: user1,
+        wallet: "1",
       },
     ],
   },
