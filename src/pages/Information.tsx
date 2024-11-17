@@ -24,22 +24,65 @@ import ethLogo from "@/assets/ethereum-logo.jpg";
 
 // 입력 스키마
 const profileSchema = z.object({
-  name: z.string(),
-  age: z.string(),
-  about: z.string(),
-  country: z.string(),
-  mbti: z.string(),
-  hobby: z.string(),
+  name: z.string().min(1, "Name is required"),
+  age: z.number().min(0, "Age must be positive"),
+  country: z.string().min(1, "Country is required"),
+  mbti: z.string().min(1, "MBTI is required"),
+  hobby: z.string().min(1, "Hobby is required"),
+  about: z.string().min(1, "About is required"),
 });
 
 const Information = () => {
-  const { accountInfo } = useKinto(); // TODO: info
-  const { login, logout, authenticated, user } = usePrivy();
+  // const { accountInfo } = useKinto(); // TODO: info
+  // const { login, logout, authenticated, user } = usePrivy();
 
-  const nav = useNavigate();
+  // const nav = useNavigate();
 
-  const [profileImg, setProfileImg] = useState<string>(""); // 백 저장용
-  const [readImg, setReadImg] = useState<string>(""); // 프론트 렌더용
+  // const [profileImg, setProfileImg] = useState<string>(""); // 백 저장용
+  // const [readImg, setReadImg] = useState<string>(""); // 프론트 렌더용
+
+  // const form = useForm<z.infer<typeof profileSchema>>({
+  //   resolver: zodResolver(profileSchema),
+  //   mode: "onChange",
+  // });
+
+  // const onSubmit = async (data: z.infer<typeof profileSchema>) => {
+  //   const newUser = {
+  //     account:
+  //       accountInfo?.walletAddress ||
+  //       "0xBd447658d2eaDff72a51386c12A273671a33e064",
+  //     name: data.name,
+  //     age: data.age.toString(),
+  //     country: data.country,
+  //     mbti: data.mbti,
+  //     hobby: data.hobby,
+  //     about: data.about,
+  //     profileImage: profileImg,
+  //   };
+  //   console.log(newUser);
+  //   try {
+  //     const response = await axios.post("http://localhost:3000/user", newUser, {
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Accept: "application/json",
+  //         "Access-Control-Allow-Origin": "*",
+  //         "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
+  //       },
+  //       withCredentials: true,
+  //       httpsAgent: true,
+  //     });
+  //     console.log(response);
+  //     nav("/main");
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+  const { user, login, logout } = usePrivy();
+  const navigate = useNavigate();
+
+  const [profileImg, setProfileImg] = useState<string>("");
+  const [readImg, setReadImg] = useState<string>("");
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -48,9 +91,7 @@ const Information = () => {
 
   const onSubmit = async (data: z.infer<typeof profileSchema>) => {
     const newUser = {
-      account:
-        accountInfo?.walletAddress ||
-        "0xBd447658d2eaDff72a51386c12A273671a33e064",
+      account: user?.wallet?.address || "",
       name: data.name,
       age: data.age.toString(),
       country: data.country,
@@ -65,16 +106,44 @@ const Information = () => {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
         },
         withCredentials: true,
-        httpsAgent: true,
       });
       console.log(response);
-      nav("/main");
+      navigate("/main");
     } catch (error) {
       console.log(error);
+      alert("Failed to save profile. Please try again.");
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (file.size > 500 * 1024 * 1024) {
+      // Limit to 500KB for demo
+      alert("File is too large. Maximum size is 500MB.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const { data } = await axios.post(
+        "http://localhost:3000/upload/image",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      console.log(data);
+      setProfileImg(data.filename);
+      const previewUrl = URL.createObjectURL(file);
+      setReadImg(previewUrl);
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      alert("Image upload failed. Please try again.");
     }
   };
 
@@ -94,31 +163,7 @@ const Information = () => {
           input.onchange = async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file) {
-              if (file.size > 500 * 1024 * 1024) {
-                return;
-              }
-              const formData = new FormData();
-              formData.append("image", file);
-
-              try {
-                const { data } = await axios.post(
-                  "http://localhost:3000/upload/image",
-                  formData,
-                  {
-                    headers: {
-                      "Content-Type": "multipart/form-data",
-                    },
-                  }
-                );
-                console.log(data);
-                setProfileImg(data.filename);
-                // 미리보기용 URL
-                const previewUrl = URL.createObjectURL(file);
-                setReadImg(previewUrl);
-                return () => URL.revokeObjectURL(previewUrl);
-              } catch (error) {
-                console.error("fail to upload.");
-              }
+              await handleImageUpload(file);
             }
           };
           input.click();
@@ -207,12 +252,12 @@ const Information = () => {
         </div>
 
         <div className="flex flex-col items-center justify-center gap-4 w-full">
-          <Button variant="gradient" onClick={authenticated ? logout : login}>
-            {authenticated
-              ? `${user?.wallet?.address.slice(
+          <Button variant="gradient" onClick={user ? logout : login}>
+            {user && user.wallet
+              ? `${user.wallet.address.slice(
                   0,
                   6
-                )}...${user?.wallet?.address.slice(-4)}`
+                )}...${user.wallet.address.slice(-4)}`
               : "Connect Wallet"}
           </Button>
           <Button type="submit" variant="gradient">

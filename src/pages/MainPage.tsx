@@ -32,35 +32,39 @@ const ERC20_ABI = [
 
 const contractAddress = "0x9F99a0C9FA804A90Ebb4503A89006fddc3A239a3"; // TODO
 const collectingAddress = "0xa7E6a5baA467E212f6c0B996828839902Da32ec9";
-const KINTO_RPC_URL = "https://rpc.kinto.xyz/http";
-
-interface TxCall {
-  to: `0x${string}`;
-  data: `0x${string}`;
-  value: bigint;
-}
+const ETHEREUM_RPC_URL = "https://rpc.kinto.xyz/http";
 
 const MainPage = () => {
   const { user } = usePrivy();
-
-  const { kinto, accountInfo } = useKinto();
-  const { data: userInfo, isLoading } = useUserInfo(
-    `${
-      accountInfo?.walletAddress || "0xBd447658d2eaDff72a51386c12A273671a33e064"
-    }`
-  );
-  const nav = useNavigate();
-
-  const { mutate: joinQueue } = useJoinQueue();
+  const navigate = useNavigate();
 
   const requestJoinBattle = async () => {
-    if (!userInfo || !user?.wallet?.address) return;
+    if (!user?.wallet?.address) {
+      alert("Please connect your wallet first.");
+      return;
+    }
 
     try {
-      // 매칭 큐 참여
-      const res = await joinQueue(userInfo.id);
-      console.log(res);
-      nav("/battle");
+      // Initialize ethers provider
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // Initialize contract
+      const tokenContract = new ethers.Contract(
+        contractAddress,
+        ERC20_ABI,
+        signer
+      );
+
+      // Send 1 HTK token
+      const tx = await tokenContract.transfer(
+        collectingAddress,
+        ethers.parseUnits("1", 18)
+      ); // Assuming HTK has 18 decimals
+      await tx.wait();
+
+      console.log("HTK tokens sent successfully:", tx);
+      navigate("/battle");
     } catch (error) {
       console.error("Transaction failed:", error);
       alert("Transaction failed. Please check your wallet and try again.");

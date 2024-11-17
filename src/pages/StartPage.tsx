@@ -5,48 +5,67 @@ import { createKintoSDK, KintoAccountInfo } from "kinto-web-sdk";
 
 import kyc1 from "@/assets/kyc1.png";
 import kyc2 from "@/assets/kyc2.png";
+import { usePrivy } from "@privy-io/react-auth";
 
 const StartPage = () => {
-  const [accountInfo, setAccountInfo] = useState<KintoAccountInfo | undefined>(
-    undefined
-  );
+  // const [accountInfo, setAccountInfo] = useState<KintoAccountInfo | undefined>(
+  //   undefined
+  // );
 
-  const { connect, kinto } = useKinto();
-  const nav = useNavigate();
+  // const { connect, kinto } = useKinto();
+  // const nav = useNavigate();
 
-  // TODO
-  const getOnchainKyc = async () => {
-    // console.log("try connecting wallet");
+  // // TODO
+  // const getOnchainKyc = async () => {
+  //   // // console.log("try connecting wallet");
+  //   // try {
+  //   //   // const kinto = createKintoSDK(
+  //   //   //   "0x9F99a0C9FA804A90Ebb4503A89006fddc3A239a3"
+  //   //   // );
+  //   //   // console.log("ㅠㅠ");
+  //   //   // const info = await kinto.connect();
+  //   //   // const info = await connect();
+  //   //   // console.log(info);
+  //   //   // if (info.approval) nav("/info");
+  //   //   if (accountInfo?.exists) nav("/info");
+  //   // } catch (error) {
+  //   //   console.log(error);
+  //   // }
+  //   nav("/info");
+  // };
+
+  // async function fetchAccountInfo() {
+  //   try {
+  //     setAccountInfo(await kinto.connect());
+  //   } catch (error) {
+  //     console.error("Failed to fetch account info:", error);
+  //   }
+  // }
+
+  // useEffect(() => {
+  //   console.log(accountInfo);
+  // }, [accountInfo]);
+
+  // useEffect(() => {
+  //   fetchAccountInfo();
+  // }, []);
+  const { user, login } = usePrivy();
+  const navigate = useNavigate();
+
+  const handleConnectWallet = async () => {
     try {
-      // const kinto = createKintoSDK(
-      //   "0x9F99a0C9FA804A90Ebb4503A89006fddc3A239a3"
-      // );
-      // console.log("ㅠㅠ");
-      // const info = await kinto.connect();
-      // const info = await connect();
-      // console.log(info);
-      // if (info.approval) nav("/info");
-      if (accountInfo?.exists) nav("/info");
+      await login();
     } catch (error) {
-      console.log(error);
+      console.error("Wallet connection failed:", error);
+      alert("Failed to connect wallet. Please try again.");
     }
   };
 
-  async function fetchAccountInfo() {
-    try {
-      setAccountInfo(await kinto.connect());
-    } catch (error) {
-      console.error("Failed to fetch account info:", error);
+  useEffect(() => {
+    if (user?.wallet?.address) {
+      navigate("/info");
     }
-  }
-
-  useEffect(() => {
-    console.log(accountInfo);
-  }, [accountInfo]);
-
-  useEffect(() => {
-    fetchAccountInfo();
-  });
+  }, [user, navigate]);
 
   return (
     <div className="bg-[#3A3F4D] gap-8 h-[700px]">
@@ -64,7 +83,7 @@ const StartPage = () => {
       <img
         src={kyc2}
         className="cursor-pointer"
-        onClick={() => getOnchainKyc()}
+        onClick={handleConnectWallet}
       />
     </div>
   );
